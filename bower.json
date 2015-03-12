@@ -1,17 +1,17 @@
 {
-  "name": "th-google-pie",
+  "name": "lens-viz-g-pie-chart",
   "version": "0.0.0",
   "keywords": [
-    "seed",
+    "lenses",
     "polymer",
     "web-components"
   ],
-  "main": "th-google-pie.html",
+  "main": "lens-viz-g-pie-chart.html",
   "dependencies": {
     "polymer": "Polymer/polymer#~0.5.1",
-    "th-animated": "https://github.com/thelmanews/th-animated.git",
+    "th-animated": "thelmanews/th-animated",
     "google-chart": "GoogleWebComponents/google-chart#master",
-    "th-u-data-selector": "thelmanews/th-u-data-selector",
-    "th-data-utility": "thelmanews/th-data-utility"
+    "lens-u-data-selector": "lenses/lens-u-data-selector",
+    "lens-u-data-utility": "lenses/lens-u-data-utility"
   }
 }
