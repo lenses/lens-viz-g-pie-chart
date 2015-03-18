@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../th-d3-chart/th-d3-chart.html">
 <link rel="import" href="../th-animated/th-animated.html">
 <link rel="import" href="../google-chart/google-chart.html">
 <link rel="import" href="../lens-u-data-selector/lens-u-data-selector.html">
@@ -15,7 +16,7 @@ Element providing a Thelma wrapper for the Google geochart.
 @status alpha
 @homepage http://nishacodes.github.io/lens-viz-g-pie-chart
 -->
-<polymer-element name="lens-viz-g-pie-chart"  extends="th-d3-chart" attributes="input output tooltipText type chartData dataLabel backgroundColor legend showOptions selectedLabel selectedValue labelValueSelection chartTitle fontSize pieHole pieSliceText is3D textColor">
+<polymer-element name="lens-viz-g-pie-chart"  extends="th-d3-chart" attributes="input output tooltipText type chartData dataLabel backgroundColor legend showOptions selectedLabel selectedValue labelValueSelection chartTitle fontSize pieHole pieSliceText is3D textColor numberPattern">
   <template> 
     <core-style ref="theme"></core-style>
     <link rel="stylesheet" href="lens-viz-g-pie-chart.css">
@@ -28,7 +29,8 @@ Element providing a Thelma wrapper for the Google geochart.
     <google-chart id="googleChart" on-google-chart-render="{{chartReady}}" selection="{{selection}}" style="width:100%; height: {{showOptions | heightFilter}};"
           type='pie'
           options= "{{options}}"
-          data="{{_data}}">
+          data="{{_data}}"
+          numberFormats="{{numberFormats}}">
     </google-chart>
   </template>
 
@@ -63,12 +65,7 @@ Element providing a Thelma wrapper for the Google geochart.
        * @type {Boolean}
        */
       legend: false,
-      /**
-       * 'numberFormat' refers to the number format of the legend min and max
-       * @type {String}
-       * @example: '.##'
-       */
-      numberFormat: "",
+      numberPattern: "",
       /**
        * 'tooltipText' reders to which values get shown in the tooltip
        * @type {String}
@@ -96,7 +93,9 @@ Element providing a Thelma wrapper for the Google geochart.
         legend: "updateOptions",
         type: "updateOptions",
         backgroundColor: "updateOptions",
-        textColor: "updateOptions"
+        textColor: "updateOptions",
+        numberPattern:  "updateData",
+        _numberPattern:  "updateOptions"
       },    
       ready: function() {
         var self = this;
@@ -123,16 +122,31 @@ Element providing a Thelma wrapper for the Google geochart.
         if(!self.labelValueSelection || !self.labelValueSelection[0] || !self.labelValueSelection[1]) {
           return;
         }
+        var firstRow = ["Data Point", self.labelValueSelection[1]];
 
-        self._data = self.input.map(function(item){
+        self._data = self.input.map(function(item, index){
           var row = [];
           row.push(item[self.labelValueSelection[0]]);
+            if (index === 0){
+            // Extract the number format of the first row of data and apply to tooltips
+            
+            var format = self.$.utility.extractNumberFormat(item[self.labelValueSelection[1]]);
+            if (format){
+              self._numberPattern = format.pattern; // Use this pattern to apply to axis numbers 
+              self.numberFormats.push({col: 1, prefix: format.prefix, suffix: format.suffix, groupingSymbol:',', fractionDigits: format.decimalPlaces});
+            } 
+          }
             var unformattedValue = self.$.utility.unformatString(item[self.labelValueSelection[1]]);
             row.push(unformattedValue);
           return row;
         });
 
-        self._data.unshift(["Data Point", self.labelValueSelection[1]]);
+        self._data.unshift(firstRow);
+
+        // If a specific number pattern is given, override the default pattern extracted from values
+        if (self.numberPattern){
+          self.numberFormats = [{col: 1, pattern: self.numberPattern}];
+        }
    
       },
 
@@ -143,6 +157,7 @@ Element providing a Thelma wrapper for the Google geochart.
       updateData: function() {
         var self = this;
         self.reformatData();
+        this.updateOptions();
       },
       updateSelections: function(){
         var self = this;
@@ -183,7 +198,7 @@ Element providing a Thelma wrapper for the Google geochart.
           pieSliceText: self.pieSliceText,
           pieSliceTextStyle: {color: fgColor, fontName: colors.theme.font},
           legend: { 
-            numberFormat: self.numberFormat,
+            numberFormat: self.numberPattern || self._numberPattern || "#,###.##", // numberPattern is exposed as an attribute and _numberPattern is the pattern extracted from data
             textStyle: { 
               color: fgColor, 
               fontName: colors.theme.font, 
@@ -261,6 +276,7 @@ Element providing a Thelma wrapper for the Google geochart.
             "chartTitle":{"friendly":"Title", "type":"string", "default":""},
             "type": {"friendly":"Type", "type": "dropdown", "default": "pie", "values":["pie", "donut"]},
             "pieHole": {"friendly":"Pie Hole Size (for donut only)", "type":"range", "default":0.4, "range":[0,1], "step":0.1},
+            "numberPattern": {"friendly":"Number Pattern", "type":"string", "default":""},
             "fontSize":{"friendly":"Font Size", "type":"int", "default":""},
             "textColor":{"friendly":"Text Color", "type":"color", "default":""},
             "tooltipText": {"friendly":"Tooltip Text", "type": "dropdown", "default": "both", "values":["both", "value", "percentage"]},
